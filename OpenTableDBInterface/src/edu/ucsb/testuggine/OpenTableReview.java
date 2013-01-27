@@ -9,7 +9,7 @@ import edu.princeton.cs.algs4.Date;
  * 
  * {"noise": "Energetic", 
  * "features": ["vibrant bar scene", "late-night find", "neighborhood gem", "romantic", "hot spot"], 
- * "service": 5, 
+ * "service": 5,  
  * "title": "I love this place! The staff", 
  * "food": 5, 
  * "text": "I love this place! The staff is always attentive [...]", 
@@ -29,6 +29,7 @@ public class OpenTableReview {
 	String text;
 	String restaurant_id;
 	Integer ambience;
+	Integer overall;
 	Date date;
 	OpenTableUser author;
 	String id;
@@ -37,7 +38,7 @@ public class OpenTableReview {
 	 */
 	public OpenTableReview(String noise, ArrayList<String> features,
 			String service, String title, Integer food, String text,
-			String restaurant_id, Integer ambience, Date date,
+			String restaurant_id, Integer ambience, Integer overall, Date date,
 			String author_id, String id) {
 		this.noise = noise;
 		this.features = features;
@@ -47,6 +48,7 @@ public class OpenTableReview {
 		this.text = text;
 		this.restaurant_id = restaurant_id;
 		this.ambience = ambience;
+		this.overall = overall;
 		this.date = date;
 		this.author = new OpenTableUser(author_id);
 		this.id = id;
@@ -55,7 +57,7 @@ public class OpenTableReview {
 	/** This version asks for a date in String format and converts it */
 	public OpenTableReview(String noise, ArrayList<String> features,
 			String service, String title, Integer food, String text,
-			String restaurant_id, Integer ambience, String dateStr,
+			String restaurant_id, Integer ambience, Integer overall, String dateStr,
 			String author_id, String id) {
 		this.noise = noise;
 		this.features = features;
@@ -65,13 +67,14 @@ public class OpenTableReview {
 		this.text = text;
 		this.restaurant_id = restaurant_id;
 		this.ambience = ambience;
+		this.overall = overall;
 		this.date = convertDate(dateStr);
 		this.author = new OpenTableUser(author_id);
 		this.id = id;
 	}
 	
 	private static Date convertDate(String dateStr) {
-		// TODO: Il formato di OpenTable è "date": "08/18/2012"
+		// format: "date": "08/18/2012"
 		Integer month_start_pos = 0;
 		Integer month_end_pos = dateStr.indexOf("/");
 		
@@ -94,11 +97,8 @@ public class OpenTableReview {
 		return "OpenTableReview [noise=" + noise + ", features=" + features
 				+ ", service=" + service + ", title=" + title + ", food="
 				+ food + ", text=" + text + ", restaurant_id=" + restaurant_id
-				+ ", ambience=" + ambience + ", date=" + date + ", author="
-				+ author + ", id=" + id + "]";
+				+ ", ambience=" + ambience + ", overall=" + overall + ", date="
+				+ date + ", author=" + author + ", id=" + id + "]";
 	}
-
-	
-
 
 }

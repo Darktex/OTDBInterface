@@ -7,7 +7,6 @@ import java.util.regex.Pattern;
 
 public class Address {
 	
-	
 	public String number;
 	public String street;
 	public String zip;

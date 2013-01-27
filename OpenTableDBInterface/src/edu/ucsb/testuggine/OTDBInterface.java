@@ -51,69 +51,77 @@ public class OTDBInterface {
 
 	}
 
-	/** String format example:
-	 * 
-	 * {"region_id": 60763, 
-	 * "url": "http://www.tripadvisor.com/...", 
-	 * "phone": "2128896600", 
-	 * "details": ["Price range: $5 - $20", "Cuisines: American, Hamburgers, Ice Cream, Hot Dogs", 
-	 * 				"Good for: Families with children, Outdoor seating, Dining on a budget", 
-	 * 				"Dining options: Breakfast/Brunch, Lunch, Dinner, Takeout, Late Night, Dessert"], 
-	 * "address": {"region": "NY", 
-	 * 				"street-address": "Southeast corner of Madison Square Park", 
-	 * 				"postal-code": "10010", 
-	 * 				"locality": "New York City"}, 
-	 * "type": "restaurant", 
-	 * "id": 911447, 
-	 * "name": "Shake Shack"} */
+	/** String format example: 
+	  *{"website": "http://www.lacervecerianyc.com", 
+	  *"city": "new-york", 
+	  *"neighborhood": "East Village", 
+	  *"name": "' La Cerveceria", 
+	  *"short_name": "la-cerveceria", 
+	  *"cuisine": "Peruvian", 
+	  *"url": "http://www.opentable.com/la-cerveceria?scpref=110", 
+	  *"price": "$31 to $50", 
+	  *"email": "lacervecerianyc@gmail.com", 
+	  *"phone": "(212) 777-6965", 
+	  *"address": "65 2nd Avenue\nNew York, NY  10003", 
+	  *"id": 51568}
+	 **/
 	private OpenTableRestaurant parseRestaurant(JSONObject jsonObject) {
 
-		String region_id = String.valueOf((Long) jsonObject.get("region_id"));
-		String url = (String) jsonObject.get("url");
-		String phone = (String) jsonObject.get("phone");
+		String website = (String) jsonObject.get("website");
+		String name = (String) jsonObject.get("name");
+		// short_name gets discarded, we don't really care about it
+		String cuisine = (String) jsonObject.get("cuisine");
+		String url = (String) jsonObject.get("url"); // Not their website
+		String price = (String) jsonObject.get("price");
+		String email = (String) jsonObject.get("email");
+		String phone = (String) jsonObject.get("phone"); // TODO possibly use TA function to process it
+		String addressStr = (String) jsonObject.get("address");
+		String id = (String) jsonObject.get("id");	
 
-		String details = "";
-		JSONArray detailsArray = (JSONArray) jsonObject.get("details");
-		@SuppressWarnings("unchecked")
-		Iterator<String> iterator = detailsArray.iterator();
-		while (iterator.hasNext()) {
-			details += "; " + iterator.next();
-		}
-
-		JSONObject address = (JSONObject) jsonObject.get("address");
-		String addressRegion = (String) address.get("region");
-		String streetAddress = (String) address.get("street-address");
-		String postalCode = (String) address.get("postal-code");
-		String locality = (String) address.get("locality");
+		Address address = parseOpenTableAddress(addressStr);
 		
-		Address restaurantAddress = new Address(streetAddress, postalCode, locality, addressRegion);
-		
-		
-		String type = (String) jsonObject.get("type");
-		String id = String.valueOf((Long) jsonObject.get("id"));
-		String name = (String) jsonObject.get("name");		
-
-
-		return new OpenTableRestaurant(name, restaurantAddress, phone, url, details, id, region_id, type);
+		return new OpenTableRestaurant(name, cuisine, url, price, address, phone, email, website, id);
 	}
 	
-	
+	/** format: 
+	 * 
+	 * "address": "23808 Resort Parkway\nSan Antonio, TX  78261"
+	 * @param addressStr
+	 * @return
+	 */
+	private Address parseOpenTableAddress(String addressStr) {
+		int street_end_pos = addressStr.indexOf("\n");
+		int city_end_pos = addressStr.indexOf(", ", street_end_pos + 1);
+		int region_end_pos = addressStr.indexOf(" ", city_end_pos + 1);
+		
+		String streetAndNum = addressStr.substring(0, street_end_pos);
+		String city = addressStr.substring(street_end_pos + 1, city_end_pos);
+		String region = addressStr.substring(city_end_pos + 1, region_end_pos);
+		String zip = addressStr.substring(region_end_pos + 1);
+		return new Address(streetAndNum, zip, city, region);
+	}
+
 	/** Format: 
-	 * {"ratings": {"overall": 4.0}, 
-	 * "title": "\u201cUnderstated, yet impressive\u201d", 
-	 * "text": "It just ...", 
-	 * "author": {"username": "BeBoBangus", "num_cities": 2, 
-	 * 				"num_reviews": 5, "location": "BeBoBangus", 
-	 * 				"id": "C89E367F21AC6B61AB085D1B2409540C", 
-	 * 				"num_type_reviews": 3}, 
-	 * "offering_id": 911447, 
-	 * "date": "December 12, 2012\nNEW", 
-	 * "id": 147314103}
-	 * {"food": 5.0, "atmosphere": 5.0, "overall": 5.0, "value": 5.0, "service": 5.0}
+	 * {"noise": "Moderate", 
+	 * "features": 
+	 * 		["vibrant bar scene", 
+	 * 			"good for groups", 
+	 * 			"neighborhood gem", 
+	 * 			"special occasion", 
+	 * 			"hot spot"
+	 * 		], 
+	 * "service": 5, 
+	 * "title": "Due to working late I turned", 
+	 * "food": 5, 
+	 * "text": "Due to working late I turned up late so...", 
+	 * "restaurant_id": 33070, 
+	 * "ambiance": 5, 
+	 * "overall": 5, 
+	 * "date": "10/11/2012", 
+	 * "author_id": 43371325, 
+	 * "id": 35754942}
 	 * */
 	private OpenTableReview parseReview(JSONObject jsonObject) {
-		
-		// TODO: Ask Myle about the helpful counter. Was it not mined? It's not the sample data I got.
 		
 		JSONObject ratings = (JSONObject) jsonObject.get("ratings");
 		Float globalRating = (float) ((Double) ratings.get("overall")).doubleValue();

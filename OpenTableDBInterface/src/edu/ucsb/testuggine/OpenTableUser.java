@@ -5,15 +5,6 @@ package edu.ucsb.testuggine;
  * */
 public class OpenTableUser {
 	String id;
-	/**
-	 * @param userName
-	 * @param num_cities
-	 * @param num_helpful_votes
-	 * @param num_reviews
-	 * @param num_type_reviews
-	 * @param id
-	 * @param location
-	 */
 
 	/**
 	 * @param id
