@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
+import java.util.ArrayList;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -123,90 +124,58 @@ public class OTDBInterface {
 	 * */
 	private OpenTableReview parseReview(JSONObject jsonObject) {
 		
-		JSONObject ratings = (JSONObject) jsonObject.get("ratings");
-		Float globalRating = (float) ((Double) ratings.get("overall")).doubleValue();
-		Float valueRating = (float) 0.0, atmosphereRating = (float) 0.0, serviceRating = (float) 0.0, foodRating = (float) 0.0;
-		if (ratings.containsKey("value"))
-		 valueRating = (float) ((Double) ratings.get("value")).doubleValue();
-		if (ratings.containsKey("atmosphere")) 
-			atmosphereRating = (float) ((Double) ratings.get("atmosphere")).doubleValue();
-		if (ratings.containsKey("service")) 
-			serviceRating = (float) ((Double) ratings.get("service")).doubleValue();
-		if (ratings.containsKey("food")) 
-			foodRating = (float) ((Double) ratings.get("food")).doubleValue();
-		Integer helpfulCounter = 0;
-		if (ratings.containsKey("helpful"))
-				helpfulCounter = (Integer) ratings.get("helpful"); // TODO Maybe the name will differ?
+		String noise = (String) jsonObject.get("noise");
 		
+		ArrayList<String> features = new ArrayList<String>();
+		JSONArray featuresArray = (JSONArray) jsonObject.get("features");
+		if (featuresArray == null) featuresArray = new JSONArray();
+		@SuppressWarnings("unchecked")
+		Iterator<String> iterator = featuresArray.iterator();
+		while (iterator.hasNext()) {
+			features.add(iterator.next().trim());
+		}
+		
+		Integer service = (Integer) jsonObject.get("service");
 		String title = (String) jsonObject.get("title");
+		Integer food = (Integer) jsonObject.get("food");
 		String text = (String) jsonObject.get("text");
-		JSONObject authorJSON = (JSONObject) jsonObject.get("author");
-		OpenTableUser author = parseAuthor(authorJSON);
-		String id = String.valueOf((Long) jsonObject.get("id"));
+		String restaurant_id = (String) jsonObject.get("restaurant_id");
+		Integer ambience = (Integer) jsonObject.get("ambiance");
+		Integer overall = (Integer) jsonObject.get("overall");
 		String dateStr = (String) jsonObject.get("date");
-		
-		String restaurant_id = String.valueOf((Long) jsonObject.get("offering_id"));
-		
-		
-		return new OpenTableReview(id, author, globalRating, valueRating, atmosphereRating,
-				serviceRating, foodRating, helpfulCounter, dateStr, title, text, restaurant_id);
-	}
-
-
-	/** Format: 
-	 * {"username": "Estherleibel", 
-	 * "num_cities": 2, 
-	 * "num_helpful_votes": 1, 
-	 * "num_reviews": 20, 
-	 * "num_type_reviews": 16, 
-	 * "id": "C3ECF97B6A4424B63DB907412344B520", 
-	 * "location": "New York City, New York"}
-	 * */
-	private OpenTableUser parseAuthor(JSONObject jsonObject) {
+		String author_id = (String) jsonObject.get("author_id");
 		String id = (String) jsonObject.get("id");
-		String userName = (String) jsonObject.get("username");
-		
-		Integer reviewsInCitiesCount = 0, helpfulCount = 0, totalReviewsCount = 0, restaurantReviewsCount = 0;
-		
-		if (jsonObject.containsKey("num_cities"))
-			reviewsInCitiesCount = ((Long) jsonObject.get("num_cities")).intValue();
-		if (jsonObject.containsKey("num_helpful_votes"))
-			helpfulCount = ((Long) jsonObject.get("num_helpful_votes")).intValue();
-		if (jsonObject.containsKey("num_reviews"))
-			totalReviewsCount = ((Long) jsonObject.get("num_reviews")).intValue();
-		if (jsonObject.containsKey("num_type_reviews"))
-			restaurantReviewsCount = ((Long) jsonObject.get("num_type_reviews")).intValue();
-		String location = (String) jsonObject.get("location");
-		
-		return new OpenTableUser(userName, reviewsInCitiesCount, helpfulCount, totalReviewsCount,
-				restaurantReviewsCount, id, location);
-		
+
+		return new OpenTableReview(noise, features, service, title, food, 
+				text, restaurant_id, ambience, overall, dateStr, author_id, id);
 	}
 
 	void writeToDB(OpenTableRestaurant r) throws SQLException {
-		String insertionQuery = "INSERT INTO `TripAdvisorRestaurant` " +
-				"(`name`, `addressNum`, `addressStreet`, `addressCity`, " +
-				"`addressRegion`, `addressZip`, `phoneNumber`, `url`, " +
-				"`details`, `id`, `region_id`, `type`) " +
+		String insertionQuery = "INSERT INTO `OpenTableRestaurant` " +
+				"(`name`, `cuisine`, `url`, `price`, addressNum`, `addressStreet`, `addressCity`, " +
+				"`addressRegion`, `addressZip`, `phoneNumber`, `email`, " +
+				"`website`, `id`) " +
 				"VALUES " +
 				"(?, ?, ?, ?, " +
 				"?, ?, ?, ?, " +
-				"?, ?, ?, ?);";
+				"?, ?, ?, ?," +
+				"?);";
 
 		PreparedStatement prep = db.con.prepareStatement(insertionQuery);
 
 		prep.setString(1, r.name); // Name CANNOT be null!
-		safeInsert(prep, 2, r.address.number);
-		safeInsert(prep, 3, r.address.street);
-		safeInsert(prep, 4, r.address.city);
-		safeInsert(prep, 5, r.address.region);
-		safeInsert(prep, 6, r.address.zip);
-		safeInsert(prep, 7, r.phoneNumber);
-		safeInsert(prep, 8, r.url);
-		safeInsert(prep, 9, r.details);
-		safeInsert(prep, 10, r.id);
-		safeInsert(prep, 11, r.region_id);
-		safeInsert(prep, 12, r.type);
+		safeInsert(prep, 2, r.cuisine);
+		safeInsert(prep, 3, r.url);
+		safeInsert(prep, 4, r.price);
+		safeInsert(prep, 5, r.address.number);
+		safeInsert(prep, 6, r.address.street);
+		safeInsert(prep, 7, r.address.city);
+		safeInsert(prep, 8, r.address.region);
+		safeInsert(prep, 9, r.address.zip);
+		safeInsert(prep, 10, r.phoneNumber);
+		safeInsert(prep, 11, r.email);
+		safeInsert(prep, 12, r.website);
+		safeInsert(prep, 13, r.id);
 
 		if (!isAlreadyInDB(r)) {
 			StdOut.println("----\n" + prep + "\n--------");
@@ -219,33 +188,30 @@ public class OTDBInterface {
 
 	void writeToDB(OpenTableReview rev) throws SQLException {
 
-		String alreadyExistsCheckQuery = "SELECT * FROM  `TripAdvisorReview` WHERE  `id` =  ?";
+		String alreadyExistsCheckQuery = "SELECT * FROM  `OpenTableReview` WHERE  `id` =  ?";
 		PreparedStatement checkStatement = db.con
 				.prepareStatement(alreadyExistsCheckQuery);
 		checkStatement.setString(1, rev.id);
 		ResultSet alreadyExistsRes = checkStatement.executeQuery(); // if it's already there, don't insert
-		String insertionQuery = "INSERT INTO `TripAdvisorReview` " +
-				"(`id`, `author_id`, `restaurant_id`, `globalRating`, `valueRating`, `atmosphereRating`, " +
-				"`serviceRating`, `foodRating`, `helpfulCounter`, `date`, `title`, `text`) " +
+		String insertionQuery = "INSERT INTO `OpenTableReview` " +
+				"(`noise`, `features`, `serviceRating`, `title`, `foodRating`, `text`, " +
+				"`restaurant_id`, `ambienceRating`, `overallRating`, `date`, `author_id`, `id`) " +
 				"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
 		PreparedStatement prep = db.con.prepareStatement(insertionQuery);
 
-		prep.setString(1, rev.id);
-
-		writeToDb(rev.author);
-		prep.setString(2, rev.author.id);
-		prep.setString(3, rev.restaurant_id);
-		
-		prep.setFloat(4, rev.globalRating);
-		prep.setFloat(5,  rev.valueRating);
-		prep.setFloat(6,  rev.atmosphereRating);
-		prep.setFloat(7,  rev.serviceRating);
-		prep.setFloat(8,  rev.foodRating);
-		prep.setInt(9, rev.helpfulCounter);
+		safeInsert(prep, 1, rev.noise);
+		safeInsert(prep, 2, rev.features.toString());
+		prep.setInt(3, rev.serviceRating);
+		safeInsert(prep, 4, rev.title);
+		prep.setInt(5, rev.foodRating);
+		safeInsert(prep, 6, rev.text);
+		prep.setString(7, rev.restaurant_id);
+		prep.setInt(8, rev.ambienceRating);
+		prep.setInt(9, rev.overallRating);
 		safeInsert(prep, 10, mySQLformat(rev.date));
-		safeInsert(prep, 11, rev.title);
-		safeInsert(prep, 12, rev.text);
+		prep.setString(11, rev.author.id);
+		prep.setString(12, rev.id);
 
 		if (!alreadyExistsRes.first()) {
 			StdOut.println("----\n" + prep + "\n--------");
@@ -277,17 +243,10 @@ public class OTDBInterface {
 				.prepareStatement(alreadyExistsCheckQuery);
 		checkStatement.setString(1, u.id);
 		ResultSet alreadyExistsRes = checkStatement.executeQuery(); // if it's already there, don't insert
-		String insertionQuery = "INSERT INTO `TripAdvisorUser` (`username`, `num_cities`, " +
-				"`num_helpful_votes`, `num_reviews`, `num_type_reviews`, `id`, `location`) " +
-				"VALUES (?, ?, ?, ?, ?, ?, ?);";
+		String insertionQuery = "INSERT INTO `OpenTableUser` (`username`) " +
+				"VALUES (?);";
 		PreparedStatement prep = db.con.prepareStatement(insertionQuery);
-		prep.setString(1, u.userName); 
-		prep.setInt(2, u.num_cities); // Name CANNOT be null!
-		prep.setInt(3, u.num_helpful_votes);
-		prep.setInt(4, u.num_reviews);
-		prep.setInt(5, u.num_type_reviews);
-		prep.setString(6, u.id); // Can't be null
-		safeInsert(prep, 7, u.location);
+		prep.setString(1, u.id); 
 
 		if (!alreadyExistsRes.first()) {
 			prep.execute();

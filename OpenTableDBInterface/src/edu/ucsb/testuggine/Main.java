@@ -14,7 +14,7 @@ import org.kohsuke.args4j.Option;
 
 public class Main {
 
-	@Option(name="-rest",usage="Specify the path to an .offerings file")
+	@Option(name="-rest",usage="Specify the path to a .restaurants file")
 	private String restFile;
 
 	@Option(name="-rev",usage="Specify the path to a .reviews file")

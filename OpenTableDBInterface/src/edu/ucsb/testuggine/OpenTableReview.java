@@ -23,13 +23,13 @@ import edu.princeton.cs.algs4.Date;
 public class OpenTableReview {
 	String noise;
 	ArrayList<String> features;
-	String service;
+	Integer serviceRating;
 	String title;
-	Integer food;
+	Integer foodRating;
 	String text;
 	String restaurant_id;
-	Integer ambience;
-	Integer overall;
+	Integer ambienceRating;
+	Integer overallRating;
 	Date date;
 	OpenTableUser author;
 	String id;
@@ -37,18 +37,18 @@ public class OpenTableReview {
 	/** This version asks for a valid Date object
 	 */
 	public OpenTableReview(String noise, ArrayList<String> features,
-			String service, String title, Integer food, String text,
+			Integer service, String title, Integer food, String text,
 			String restaurant_id, Integer ambience, Integer overall, Date date,
 			String author_id, String id) {
 		this.noise = noise;
 		this.features = features;
-		this.service = service;
+		this.serviceRating = service;
 		this.title = title;
-		this.food = food;
+		this.foodRating = food;
 		this.text = text;
 		this.restaurant_id = restaurant_id;
-		this.ambience = ambience;
-		this.overall = overall;
+		this.ambienceRating = ambience;
+		this.overallRating = overall;
 		this.date = date;
 		this.author = new OpenTableUser(author_id);
 		this.id = id;
@@ -56,18 +56,18 @@ public class OpenTableReview {
 	
 	/** This version asks for a date in String format and converts it */
 	public OpenTableReview(String noise, ArrayList<String> features,
-			String service, String title, Integer food, String text,
+			Integer service, String title, Integer food, String text,
 			String restaurant_id, Integer ambience, Integer overall, String dateStr,
 			String author_id, String id) {
 		this.noise = noise;
 		this.features = features;
-		this.service = service;
+		this.serviceRating = service;
 		this.title = title;
-		this.food = food;
+		this.foodRating = food;
 		this.text = text;
 		this.restaurant_id = restaurant_id;
-		this.ambience = ambience;
-		this.overall = overall;
+		this.ambienceRating = ambience;
+		this.overallRating = overall;
 		this.date = convertDate(dateStr);
 		this.author = new OpenTableUser(author_id);
 		this.id = id;
@@ -95,9 +95,9 @@ public class OpenTableReview {
 	@Override
 	public String toString() {
 		return "OpenTableReview [noise=" + noise + ", features=" + features
-				+ ", service=" + service + ", title=" + title + ", food="
-				+ food + ", text=" + text + ", restaurant_id=" + restaurant_id
-				+ ", ambience=" + ambience + ", overall=" + overall + ", date="
+				+ ", service=" + serviceRating + ", title=" + title + ", food="
+				+ foodRating + ", text=" + text + ", restaurant_id=" + restaurant_id
+				+ ", ambience=" + ambienceRating + ", overall=" + overallRating + ", date="
 				+ date + ", author=" + author + ", id=" + id + "]";
 	}
 
