@@ -15,10 +15,13 @@ import org.kohsuke.args4j.Option;
 public class Main {
 
 	@Option(name="-rest",usage="Specify the path to a .restaurants file")
-	private String restFile;
+	private String restFile = "";
 
 	@Option(name="-rev",usage="Specify the path to a .reviews file")
-	private String revFile;
+	private String revFile = "";
+
+	@Option(name="-verbose",usage="Print what's happening")
+    private boolean verbose = false;
 
 	// receives other command line parameters than options
 	@Argument
@@ -50,10 +53,6 @@ public class Main {
 			// if enough arguments are given.
 			if( arguments.isEmpty() )
 				throw new CmdLineException("No argument is given");
-			if (restFile.isEmpty()) 
-				throw new CmdLineException("Must specify an .offering file");
-			if (revFile.isEmpty()) 
-				throw new CmdLineException("Must specify a .reviews file");
 
 
 		} catch( CmdLineException e ) {
@@ -61,19 +60,19 @@ public class Main {
 			// you'll get this exception. this will report
 			// an error message.
 			System.err.println(e.getMessage());
-			System.err.println("java TADBInterface.jar [options...] arguments...");
+			System.err.println("java OTDBInterface.jar [options...] arguments...");
 			// print the list of available options
 			parser.printUsage(System.err);
 			System.err.println();
 
 			// print option sample. This is useful some time
-			System.err.println("  Usage: java TADBInterface.jar "+parser.printExample(ALL));
+			System.err.println("  Usage: java OTDBInterface.jar "+parser.printExample(ALL));
 
 			return;
 		}
 
 		@SuppressWarnings("unused")
-		OTDBInterface tadb = new OTDBInterface(restFile, revFile);
+		OTDBInterface tadb = new OTDBInterface(restFile, revFile, verbose);
 
 	}
 }

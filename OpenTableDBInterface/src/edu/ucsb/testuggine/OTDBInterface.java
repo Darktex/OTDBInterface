@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -20,13 +22,15 @@ import edu.princeton.cs.introcs.StdOut;
 public class OTDBInterface {
 	JSONParser parser;
 	MySQLConnection db;
+	boolean verbose;
 
 	/** Requires the path to the two files 
 	 * @throws ParseException 
 	 * @throws IOException 
 	 * @throws FileNotFoundException 
 	 * @throws SQLException */
-	public OTDBInterface(String restaurantsFilePath, String reviewsFilePath) throws FileNotFoundException, IOException, ParseException, SQLException {
+	public OTDBInterface(String restaurantsFilePath, String reviewsFilePath, boolean isVerbose) throws FileNotFoundException, IOException, ParseException, SQLException {
+		verbose = isVerbose;
 		parser = new JSONParser();
 		db = new MySQLConnection();
 		In restaurantsIn = new In(restaurantsFilePath);
@@ -77,7 +81,7 @@ public class OTDBInterface {
 		String email = (String) jsonObject.get("email");
 		String phone = (String) jsonObject.get("phone"); // TODO possibly use TA function to process it
 		String addressStr = (String) jsonObject.get("address");
-		String id = (String) jsonObject.get("id");	
+		String id = String.valueOf((Long) jsonObject.get("id")).trim();	
 
 		Address address = parseOpenTableAddress(addressStr);
 		
@@ -93,12 +97,12 @@ public class OTDBInterface {
 	private Address parseOpenTableAddress(String addressStr) {
 		int street_end_pos = addressStr.indexOf("\n");
 		int city_end_pos = addressStr.indexOf(", ", street_end_pos + 1);
-		int region_end_pos = addressStr.indexOf(" ", city_end_pos + 1);
+		int region_end_pos = addressStr.indexOf(" ", city_end_pos + 2);
 		
 		String streetAndNum = addressStr.substring(0, street_end_pos);
 		String city = addressStr.substring(street_end_pos + 1, city_end_pos);
-		String region = addressStr.substring(city_end_pos + 1, region_end_pos);
-		String zip = addressStr.substring(region_end_pos + 1);
+		String region = addressStr.substring(city_end_pos + 2, region_end_pos);
+		String zip = addressStr.substring(region_end_pos + 2);
 		return new Address(streetAndNum, zip, city, region);
 	}
 
@@ -135,31 +139,31 @@ public class OTDBInterface {
 			features.add(iterator.next().trim());
 		}
 		
-		Integer service = (Integer) jsonObject.get("service");
+		Integer service = ((Long) jsonObject.get("service")).intValue();
 		String title = (String) jsonObject.get("title");
-		Integer food = (Integer) jsonObject.get("food");
+		Integer food = ((Long) jsonObject.get("food")).intValue();
 		String text = (String) jsonObject.get("text");
-		String restaurant_id = (String) jsonObject.get("restaurant_id");
-		Integer ambience = (Integer) jsonObject.get("ambiance");
-		Integer overall = (Integer) jsonObject.get("overall");
+		String restaurant_id = String.valueOf((Long) jsonObject.get("restaurant_id")).trim();
+		Integer ambience = ((Long) jsonObject.get("ambiance")).intValue();
+		Integer overall = ((Long) jsonObject.get("overall")).intValue();
 		String dateStr = (String) jsonObject.get("date");
-		String author_id = (String) jsonObject.get("author_id");
-		String id = (String) jsonObject.get("id");
+		String author_id = String.valueOf((Long) jsonObject.get("author_id")).trim();
+		String id = String.valueOf((Long) jsonObject.get("id")).trim();
 
 		return new OpenTableReview(noise, features, service, title, food, 
 				text, restaurant_id, ambience, overall, dateStr, author_id, id);
 	}
 
 	void writeToDB(OpenTableRestaurant r) throws SQLException {
-		String insertionQuery = "INSERT INTO `OpenTableRestaurant` " +
-				"(`name`, `cuisine`, `url`, `price`, addressNum`, `addressStreet`, `addressCity`, " +
+		String insertionQuery = "INSERT INTO OpenTableRestaurant " +
+				"(`name`, `cuisine`, `url`, `price`, `addressNum`, `addressStreet`, `addressCity`, " +
 				"`addressRegion`, `addressZip`, `phoneNumber`, `email`, " +
 				"`website`, `id`) " +
 				"VALUES " +
 				"(?, ?, ?, ?, " +
 				"?, ?, ?, ?, " +
 				"?, ?, ?, ?," +
-				"?);";
+				" ?);";
 
 		PreparedStatement prep = db.con.prepareStatement(insertionQuery);
 
@@ -172,7 +176,7 @@ public class OTDBInterface {
 		safeInsert(prep, 7, r.address.city);
 		safeInsert(prep, 8, r.address.region);
 		safeInsert(prep, 9, r.address.zip);
-		safeInsert(prep, 10, r.phoneNumber);
+		safeInsert(prep, 10, processPhoneNumber(r.phoneNumber));
 		safeInsert(prep, 11, r.email);
 		safeInsert(prep, 12, r.website);
 		safeInsert(prep, 13, r.id);
@@ -201,7 +205,7 @@ public class OTDBInterface {
 		PreparedStatement prep = db.con.prepareStatement(insertionQuery);
 
 		safeInsert(prep, 1, rev.noise);
-		safeInsert(prep, 2, rev.features.toString());
+		safeInsert(prep, 2, printFeatures(rev.features));
 		prep.setInt(3, rev.serviceRating);
 		safeInsert(prep, 4, rev.title);
 		prep.setInt(5, rev.foodRating);
@@ -214,15 +218,26 @@ public class OTDBInterface {
 		prep.setString(12, rev.id);
 
 		if (!alreadyExistsRes.first()) {
-			StdOut.println("----\n" + prep + "\n--------");
+			if (verbose) 
+				StdOut.println("----\n" + prep + "\n--------");
 			prep.execute();
 		}
-		else 
-			StdOut.println("Insert failed. Review already in db: \n\t" + rev);
+		else {
+			if (verbose)
+			 StdOut.println("Insert failed. Review already in db: \n\t" + rev);
+		}
 		prep.close();
 	}
 	
 	
+	private String printFeatures(ArrayList<String> features) {
+		String result = "";
+		if (features.isEmpty()) return result;
+		for (String element : features)
+			result += element + ";\n";
+		return result.substring(0, result.length() - 2);
+	}
+
 	private String mySQLformat(Date d) {
 		return d.year() + "-" + d.month() + "-" + d.day();
 	}
@@ -243,11 +258,19 @@ public class OTDBInterface {
 				.prepareStatement(alreadyExistsCheckQuery);
 		checkStatement.setString(1, u.id);
 		ResultSet alreadyExistsRes = checkStatement.executeQuery(); // if it's already there, don't insert
-		String insertionQuery = "INSERT INTO `OpenTableUser` (`username`) " +
-				"VALUES (?);";
+		String insertionQuery = "INSERT INTO `OpenTableUser` (`id`, `num_reviews`, `num_helpful_votes`, " +
+				"`first_review_date`, `last_review_date`, `num_featured`, `average`, `username`) " +
+				"VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 		PreparedStatement prep = db.con.prepareStatement(insertionQuery);
-		prep.setString(1, u.id); 
-
+		prep.setString(1, u.id);
+		prep.setInt(2, 0);
+		prep.setInt(3, 0);
+		prep.setString(4, null);
+		prep.setString(5, null);
+		prep.setInt(6, 0);
+		prep.setString(7, null); // CARE this is a float normally.
+		prep.setString(8, null);
+		
 		if (!alreadyExistsRes.first()) {
 			prep.execute();
 		}
@@ -257,13 +280,32 @@ public class OTDBInterface {
 	}
 
 	private boolean isAlreadyInDB(OpenTableRestaurant r) throws SQLException {
-		String alreadyExistsCheckQuery = "SELECT * FROM  `TripAdvisorRestaurant` WHERE  `id` =  ?";
+		String alreadyExistsCheckQuery = "SELECT * FROM  `OpenTableRestaurant` WHERE  `id` =  ?";
 		PreparedStatement checkStatement = db.con
 				.prepareStatement(alreadyExistsCheckQuery);
 		checkStatement.setString(1, r.id); // the ID of this restaurant
 		ResultSet alreadyExistsRes = checkStatement.executeQuery();
 		if (!alreadyExistsRes.first() ) return false;
 		return true;
+	}
+	
+	private String processPhoneNumber(String phone) {
+		String result = "";
+
+		Pattern phoneNumberRegex = Pattern.compile("(\\+1 ?)?\\(?(\\d{3})\\)?\\D(\\d{3})\\D(\\d{4})");
+		// optional countrycode, 3 digits, separator, 3 more digits, separator, last 4 digits. 
+		// Each of the digits groups is put inside a capture group
+
+		Matcher phoneMatcher = phoneNumberRegex.matcher(phone);
+
+		while (phoneMatcher.find()) { // Until there are phone numbers
+			String firstBlock = phoneMatcher.group(2);
+			String secondBlock = phoneMatcher.group(3);
+			String thirdBlock = phoneMatcher.group(4);
+			String numStr = firstBlock + secondBlock + thirdBlock;
+			result += numStr + "; ";
+		}
+		return result.substring(0, result.length() - 2); // Removing the last "; " sequence
 	}
 	
 	private static void safeInsert(PreparedStatement prep, int pos, String field)
